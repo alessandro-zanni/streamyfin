@@ -50,18 +50,22 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   if (process.env.EXPO_TV !== "1") {
     config.plugins?.push("expo-background-task");
 
-    config.plugins?.push([
-      "react-native-google-cast",
-      { useDefaultExpandedMediaControls: true },
-    ]);
+    // Neither builds for Mac Catalyst: the Cast SDK has no Catalyst slice and
+    // expo-camera's barcode scanner (DataScannerViewController) is iOS only
+    if (process.env.EXPO_CATALYST !== "1") {
+      config.plugins?.push([
+        "react-native-google-cast",
+        { useDefaultExpandedMediaControls: true },
+      ]);
 
-    config.plugins?.push([
-      "expo-camera",
-      {
-        cameraPermission:
-          "Allow Streamyfin to access the camera to scan QR codes for TV login.",
-      },
-    ]);
+      config.plugins?.push([
+        "expo-camera",
+        {
+          cameraPermission:
+            "Allow Streamyfin to access the camera to scan QR codes for TV login.",
+        },
+      ]);
+    }
   }
 
   // Sentry source-map/dSYM upload needs SENTRY_AUTH_TOKEN; without it the

@@ -25,6 +25,23 @@ if (process.env?.EXPO_TV === "1") {
   config.resolver.sourceExts = tvSourceExts;
 }
 
+// Mac Catalyst builds don't link the Cast SDK (no Catalyst slice), and the real
+// JS module throws at import time without its native side. Swap in a stub.
+if (process.env?.EXPO_CATALYST === "1") {
+  const castStub = require.resolve("./utils/google-cast.catalyst.ts");
+  const upstreamResolve = config.resolver.resolveRequest;
+  config.resolver.resolveRequest = (context, moduleName, platform) => {
+    if (moduleName === "react-native-google-cast") {
+      return { type: "sourceFile", filePath: castStub };
+    }
+    return (upstreamResolve ?? context.resolveRequest)(
+      context,
+      moduleName,
+      platform,
+    );
+  };
+}
+
 // config.resolver.unstable_enablePackageExports = false;
 
 module.exports = config;

@@ -2,6 +2,7 @@
 //https://docs.expo.dev/modules/autolinking/
 
 const isTV = process.env?.EXPO_TV === "1";
+const isCatalyst = process.env?.EXPO_CATALYST === "1";
 
 const disableForTV = (_moduleName) =>
   isTV
@@ -35,6 +36,10 @@ const dependencies = {
   "react-native-pager-view": disableForTV("react-native-pager-view"),
   "react-native-track-player": disableForTV("react-native-track-player"),
   "expo-location": disableForTV("expo-location"),
+  // The Cast SDK has no Mac Catalyst slice; JS gets a stub from metro.config.js
+  "react-native-google-cast": isCatalyst
+    ? { platforms: { ios: null } }
+    : undefined,
 };
 
 // Filter out undefined values
