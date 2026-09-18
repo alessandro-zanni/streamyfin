@@ -128,6 +128,10 @@ For the TV version suffix the commands with `:tv`.
 `bun run ios:tv`  
 `bun run android:tv`
 
+For the Mac version (Mac Catalyst) use `bun run prebuild:catalyst`, then `bun run ios:catalyst`.
+It needs an MPVKit build with a Mac Catalyst slice; see
+[the Mac Catalyst notes](./.claude/learned-facts/mac-catalyst-build.md) for what differs from iOS.
+
 Before opening a pull request, read [CONTRIBUTING.md](./CONTRIBUTING.md) and run `bun run test`.
 
 TV platform integration notes:

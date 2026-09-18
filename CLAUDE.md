@@ -77,11 +77,12 @@ TV platform:
 Build and tooling:
 - `eas-archive-drops-gitignored-tracked-files` | EAS uploads skip anything matching .gitignore even if tracked; re-include required assets, keep asset require() at module scope
 - `bun-test-discovery-leaks-fds` | bare `bun test` leaves ~14k fds open; child processes spawned from tests get dead stdio, so do the work in-process
+- `mac-catalyst-build` | EXPO_CATALYST=1 builds the Mac app; pod install needs the flag too, and every Catalyst-only workaround is listed there
 
 ## Project overview
 
 Streamyfin is a cross platform Jellyfin client built with Expo and React Native. It runs
-on iOS, Android, Apple TV and Android TV, with offline downloads, Chromecast and
+on iOS, Android, Apple TV and Android TV, plus macOS as a Mac Catalyst build of the iOS app, with offline downloads, Chromecast and
 Jellyseerr integration.
 
 ## Commands
@@ -109,6 +110,10 @@ bun run lint                 # Biome with fixes
 bun run format               # Biome formatter
 bun run test:unit            # Unit tests
 bun run test                 # The full gate: typecheck, unit, lint, format, i18n, doctor
+
+# Mac Catalyst (the iOS target built for macOS, opt-in with EXPO_CATALYST=1)
+bun run prebuild:catalyst
+bun run ios:catalyst         # Debug build into ios/build, signed to run locally
 
 # iOS specific
 bun run ios:install-metal-toolchain   # Fixes "missing Metal Toolchain" build errors
