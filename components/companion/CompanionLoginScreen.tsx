@@ -30,6 +30,7 @@ import {
   isQuickConnectEnabled,
 } from "@/utils/jellyfin/quickConnect";
 import { writeErrorLog } from "@/utils/log";
+import { isMacCatalyst } from "@/utils/platform";
 import {
   parsePairingCode,
   stripUrlCredentials,
@@ -46,9 +47,9 @@ type ScreenState =
 
 type ExpoCameraModule = typeof import("expo-camera");
 
-const ExpoCamera: ExpoCameraModule | null = Platform.isTV
-  ? null
-  : require("expo-camera");
+// No camera module on TV, and none on Mac Catalyst (its barcode scanner is iOS only)
+const ExpoCamera: ExpoCameraModule | null =
+  Platform.isTV || isMacCatalyst ? null : require("expo-camera");
 
 /** A server address as shown on screen: no credentials, no scheme. */
 const serverLabel = (url: string) =>
