@@ -37,6 +37,13 @@ before the fix was in:
   mount, so use `components/common/RefreshControl` instead of React Native's.
   ActivityKit and `BGContinuedProcessingTask` are unavailable there too (hence the
   `!targetEnvironment(macCatalyst)` guards in `modules/background-downloader`).
+- **`UIApplication.isIdleTimerDisabled` does nothing on the Mac.** It raises no error
+  and takes no power assertion (check with `pmset -g assertions`). The native player
+  (`NativePlayerViewController.setKeepAwake`) also holds a ProcessInfo activity there.
+  The same goes for `expo-keep-awake`, which sets that flag.
+- **Keyboard input during playback is the native player's job.** The `useKeyEventListener`
+  in `components/video-player/controls/Controls.tsx` is not mounted while
+  `NativePlayerViewController` is up, so the keys live in its `keyCommands`.
 - **Ad-hoc signed Release builds crash at launch** with "Library missing ... different
   Team IDs": Release enables the hardened runtime, whose library validation rejects
   ad-hoc frameworks. `ios:catalyst` passes `ENABLE_HARDENED_RUNTIME=NO`. A build signed
