@@ -17,6 +17,7 @@ import useRouter from "@/hooks/useAppRouter";
 import { useServerUrlResolver } from "@/hooks/useServerUrlResolver";
 import { apiAtom, userAtom } from "@/providers/JellyfinProvider";
 import { sendCredentialsToTV } from "@/utils/pairingService";
+import { isMacCatalyst } from "@/utils/platform";
 import { jellyfinProbe } from "@/utils/serverUrl/probes/jellyfin";
 
 type ScreenState =
@@ -34,9 +35,9 @@ interface ParsedPairingCode {
 
 type ExpoCameraModule = typeof import("expo-camera");
 
-const ExpoCamera: ExpoCameraModule | null = Platform.isTV
-  ? null
-  : require("expo-camera");
+// No camera module on TV, and none on Mac Catalyst (its barcode scanner is iOS only)
+const ExpoCamera: ExpoCameraModule | null =
+  Platform.isTV || isMacCatalyst ? null : require("expo-camera");
 
 export const CompanionLoginScreen: React.FC = () => {
   const { t } = useTranslation();

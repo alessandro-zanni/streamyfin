@@ -12,8 +12,10 @@ import {
 } from "@/components/stacks/NestedTabPageStack";
 import { Colors } from "@/constants/Colors";
 import useRouter from "@/hooks/useAppRouter";
+import { isMacCatalyst } from "@/utils/platform";
 
-const Chromecast = Platform.isTV ? null : require("@/components/Chromecast");
+const Chromecast =
+  Platform.isTV || isMacCatalyst ? null : require("@/components/Chromecast");
 
 import { useAtom } from "jotai";
 import { useSessions, type useSessionsProps } from "@/hooks/useSessions";
@@ -60,7 +62,7 @@ export default function IndexLayout() {
           headerRight: () =>
             Platform.isTV ? null : (
               <HeaderButtonGroup>
-                <Chromecast.Chromecast />
+                {Chromecast && <Chromecast.Chromecast />}
                 {user?.Policy?.IsAdministrator && <SessionsButton />}
                 <SettingsButton />
               </HeaderButtonGroup>

@@ -30,13 +30,15 @@ import { apiAtom, userAtom } from "@/providers/JellyfinProvider";
 import { useOfflineMode } from "@/providers/OfflineModeProvider";
 import { useSettings } from "@/utils/atoms/settings";
 import { getLogoImageUrlById } from "@/utils/jellyfin/image/getLogoImageUrlById";
+import { isMacCatalyst } from "@/utils/platform";
 import { AddToFavorites } from "./AddToFavorites";
 import { AddToWatchlist } from "./AddToWatchlist";
 import { ItemHeader } from "./ItemHeader";
 import { ItemTechnicalDetails } from "./ItemTechnicalDetails";
 import { PlayInRemoteSessionButton } from "./PlayInRemoteSession";
 
-const Chromecast = !Platform.isTV ? require("./Chromecast") : null;
+const Chromecast =
+  Platform.isTV || isMacCatalyst ? null : require("./Chromecast");
 const ItemContentTV = Platform.isTV
   ? require("./ItemContent.tv").ItemContentTV
   : null;
@@ -128,7 +130,7 @@ const ItemContentMobile: React.FC<ItemContentProps> = ({
         headerRight: () =>
           item && (
             <HeaderButtonGroup>
-              <Chromecast.Chromecast />
+              {Chromecast && <Chromecast.Chromecast />}
               {item.Type !== "Program" && (
                 <>
                   {!Platform.isTV && (
