@@ -17,15 +17,10 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Platform,
-  RefreshControl,
-  ScrollView,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Platform, ScrollView, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CardRow } from "@/components/cards/CardRow";
+import { RefreshControl } from "@/components/common/RefreshControl";
 import { Image } from "@/components/common/ServerImage";
 import { Text } from "@/components/common/Text";
 import {
