@@ -115,11 +115,12 @@ Build and tooling:
 - `expo-image-prebuilt-glide-logs` | Expo's prebuilt expo-image AAR ships with Glide logs on, every image URL (trickplay ApiKey included) reaches logcat; built from source instead
 - `repack-shrunk-resources-missing-attrs` | AGP 9's R8 resource shrinking leaves XML naming attributes it removed; apktool cannot relink them, so the Android repack declares them and builds again
 - `expo-prebuilt-modules-need-matching-rn` | the prebuilt ExpoModulesCore uses React core classes of the RN patch the SDK targets; expo-modules-core 58.0.30 on react-native-tvos 0.88.0-0 dies in dyld at every iOS launch while the build stays green
+- `mac-catalyst-build` | EXPO_CATALYST=1 builds the Mac app; pod install needs the flag too, and every Catalyst-only workaround is listed there
 
 ## Project overview
 
 Streamyfin is a cross platform Jellyfin client built with Expo and React Native. It runs
-on iOS, Android, Apple TV and Android TV, with offline downloads, Chromecast and
+on iOS, Android, Apple TV and Android TV, plus macOS as a Mac Catalyst build of the iOS app, with offline downloads, Chromecast and
 Seerr integration.
 
 ## Commands
@@ -150,6 +151,10 @@ bun run test:coverage        # Jest plus a coverage report in coverage/
 bun run perf                 # Reassure performance scenarios (*.perf-test.tsx)
 bun run perf:baseline        # Reassure baseline to compare `bun run perf` against
 bun run test                 # The full gate: typecheck, unit, lint, format, i18n, doctor
+
+# Mac Catalyst (the iOS target built for macOS, opt-in with EXPO_CATALYST=1)
+bun run prebuild:catalyst
+bun run ios:catalyst         # Debug build into ios/build, signed to run locally
 
 # iOS specific
 bun run ios:install-metal-toolchain   # Fixes "missing Metal Toolchain" build errors
