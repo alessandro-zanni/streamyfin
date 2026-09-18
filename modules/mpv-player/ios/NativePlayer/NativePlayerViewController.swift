@@ -355,6 +355,8 @@ final class NativePlayerViewController: UIViewController {
 		isViewVisible = true
 		setKeepAwake(viewModel.isPlaying)
 		#if os(iOS)
+		// Take the hardware keyboard (Mac, iPad) — see keyCommands.
+		becomeFirstResponder()
 		UIApplication.shared.setStatusBarHidden(!viewModel.controlsVisible, with: .none)
 		#endif
 		#if os(tvOS)
@@ -735,3 +737,41 @@ extension NativePlayerViewController: UIGestureRecognizerDelegate {
 }
 #endif
 
+#if os(iOS)
+// MARK: - Hardware keyboard (Mac Catalyst, iPad with a keyboard)
+// Space toggles playback, the arrows jump by the configured skip amounts —
+// the same actions the tvOS remote maps to Play/Pause and left/right.
+extension NativePlayerViewController {
+	override var canBecomeFirstResponder: Bool { true }
+
+	override var keyCommands: [UIKeyCommand]? {
+		[
+			playerKeyCommand(" ", #selector(handleKeyPlayPause)),
+			playerKeyCommand(UIKeyCommand.inputLeftArrow, #selector(handleKeySeekBackward)),
+			playerKeyCommand(UIKeyCommand.inputRightArrow, #selector(handleKeySeekForward)),
+		]
+	}
+
+	private func playerKeyCommand(_ input: String, _ action: Selector) -> UIKeyCommand {
+		let command = UIKeyCommand(input: input, modifierFlags: [], action: action)
+		// Otherwise a focused control consumes the key (space activates it).
+		command.wantsPriorityOverSystemBehavior = true
+		return command
+	}
+
+	@objc private func handleKeyPlayPause() {
+		guard !viewModel.controlsLocked else { return }
+		viewModel.togglePlayPause()
+	}
+
+	@objc private func handleKeySeekBackward() {
+		guard !viewModel.controlsLocked else { return }
+		viewModel.seekBackward()
+	}
+
+	@objc private func handleKeySeekForward() {
+		guard !viewModel.controlsLocked else { return }
+		viewModel.seekForward()
+	}
+}
+#endif
