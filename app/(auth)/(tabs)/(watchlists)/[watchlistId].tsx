@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
-  RefreshControl,
   ScrollView,
   useWindowDimensions,
   View,
@@ -21,6 +20,7 @@ import {
   HeaderButtonGroup,
 } from "@/components/common/HeaderButton";
 import { HeaderIcon } from "@/components/common/HeaderIcon";
+import { RefreshControl } from "@/components/common/RefreshControl";
 import { Text } from "@/components/common/Text";
 import { getItemNavigation } from "@/components/common/TouchableItemRouter";
 import { TVPosterCard } from "@/components/tv/TVPosterCard";
