@@ -1,0 +1,15 @@
+diff --git a/ios/SwiftAudioEx/Sources/SwiftAudioEx/AudioTap.swift b/ios/SwiftAudioEx/Sources/SwiftAudioEx/AudioTap.swift
+index 90cd4b4..86c79d8 100644
+--- a/ios/SwiftAudioEx/Sources/SwiftAudioEx/AudioTap.swift
++++ b/ios/SwiftAudioEx/Sources/SwiftAudioEx/AudioTap.swift
+@@ -7,6 +7,10 @@
+ 
+ import Foundation
+ import AVFoundation
++#if targetEnvironment(macCatalyst)
++// AVFoundation re-exports UnsafeMutableAudioBufferListPointer on iOS, not on Mac Catalyst
++import CoreAudio
++#endif
+ 
+ /**
+  Subclass this and set the AudioPlayer's `audioTap` property to start receiving the
