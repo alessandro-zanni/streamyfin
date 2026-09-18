@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
-import { Platform, RefreshControl, ScrollView, View } from "react-native";
+import { Platform, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { RefreshControl } from "@/components/common/RefreshControl";
 import { Favorites } from "@/components/home/Favorites";
 import { Favorites as TVFavorites } from "@/components/home/Favorites.tv";
 import { useInvalidatePlaybackProgressCache } from "@/hooks/useRevalidatePlaybackProgressCache";

@@ -14,7 +14,6 @@ import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Platform,
-  RefreshControl,
   ScrollView,
   type ScrollViewInstance,
   View,
@@ -23,6 +22,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/Button";
 import { HeaderButton } from "@/components/common/HeaderButton";
 import { HeaderIcon } from "@/components/common/HeaderIcon";
+import { RefreshControl } from "@/components/common/RefreshControl";
 import { Text } from "@/components/common/Text";
 import { HomeHeroCarousel } from "@/components/home/HomeHeroCarousel";
 import { InfiniteScrollingCollectionList } from "@/components/home/InfiniteScrollingCollectionList";
