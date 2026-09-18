@@ -55,6 +55,7 @@
       "googleServicesFile": "./google-services.json"
     },
     "plugins": [
+      "./plugins/withMacCatalyst.ts",
       [
         "@react-native-tvos/config-tv",
         {

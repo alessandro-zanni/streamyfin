@@ -48,6 +48,8 @@ jobs:
               - 'components/JellyfinCastStopReporter.tsx'
               - 'components/PlayButton.tsx'
               - 'hooks/useMusicCast.ts'
+              # The Mac Catalyst stand-in for the Cast API, which the test lists.
+              - 'utils/google-cast.catalyst.ts'
               - 'app/(auth)/now-playing.tsx'
               # The server screen the smoke flow finds by its test ids.
               - 'components/login/Login.tsx'
