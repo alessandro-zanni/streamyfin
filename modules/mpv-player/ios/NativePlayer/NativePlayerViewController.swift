@@ -34,6 +34,11 @@ final class NativePlayerViewController: UIViewController {
 	#endif
 	private var cancellables: Set<AnyCancellable> = []
 	private var isViewVisible = false
+	#if targetEnvironment(macCatalyst)
+	/// Holds the display awake on the Mac, where isIdleTimerDisabled does
+	/// nothing (see setKeepAwake).
+	private var displaySleepActivity: NSObjectProtocol?
+	#endif
 	#if os(tvOS)
 	/// Whether the current pan gesture is driving the scrub (a pan that
 	/// merely revealed hidden chrome must not).
@@ -207,7 +212,7 @@ final class NativePlayerViewController: UIViewController {
 			.receive(on: DispatchQueue.main)
 			.sink { [weak self] isPlaying in
 				guard let self, self.isViewVisible else { return }
-				UIApplication.shared.isIdleTimerDisabled = isPlaying
+				self.setKeepAwake(isPlaying)
 			}
 			.store(in: &cancellables)
 
@@ -354,7 +359,7 @@ final class NativePlayerViewController: UIViewController {
 		super.viewDidAppear(animated)
 		isViewVisible = true
 		engine.setPictureInPictureHostVisible(true)
-		UIApplication.shared.isIdleTimerDisabled = viewModel.isPlaying
+		setKeepAwake(viewModel.isPlaying)
 		#if os(iOS)
 		becomeFirstResponder()
 		UIApplication.shared.setStatusBarHidden(!viewModel.controlsVisible, with: .none)
@@ -497,7 +502,7 @@ final class NativePlayerViewController: UIViewController {
 		super.viewWillDisappear(animated)
 		isViewVisible = false
 		engine.setPictureInPictureHostVisible(false)
-		UIApplication.shared.isIdleTimerDisabled = false
+		setKeepAwake(false)
 		#if os(iOS)
 		// Hand the bar back visible — the app-level state persists past this
 		// VC, and the RN screens underneath expect the bar shown.
@@ -505,6 +510,24 @@ final class NativePlayerViewController: UIViewController {
 		#endif
 		#if os(tvOS)
 		resetDisplayCriteria()
+		#endif
+	}
+
+	/// Keeps the screen on while playing. On Mac Catalyst the idle timer
+	/// flag is accepted but has no effect (no power assertion is taken), so a
+	/// ProcessInfo activity keeps the display from sleeping there.
+	private func setKeepAwake(_ awake: Bool) {
+		UIApplication.shared.isIdleTimerDisabled = awake
+		#if targetEnvironment(macCatalyst)
+		if awake, displaySleepActivity == nil {
+			displaySleepActivity = ProcessInfo.processInfo.beginActivity(
+				options: [.idleDisplaySleepDisabled, .userInitiated],
+				reason: "Video playback"
+			)
+		} else if !awake, let activity = displaySleepActivity {
+			ProcessInfo.processInfo.endActivity(activity)
+			displaySleepActivity = nil
+		}
 		#endif
 	}
 
@@ -855,3 +878,4 @@ extension NativePlayerViewController: UIGestureRecognizerDelegate {
 	}
 }
 #endif
+
