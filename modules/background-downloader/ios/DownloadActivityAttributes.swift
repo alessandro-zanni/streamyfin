@@ -12,7 +12,9 @@ public enum DownloadActivityState: String, Codable, Hashable {
   case queued
 }
 
-#if os(iOS)
+// ActivityKit, App Groups for the widget and BGContinuedProcessingTask are iPhone/iPad only:
+// on Mac Catalyst every guard in this module takes its #else path (plain UserDefaults, no card).
+#if os(iOS) && !targetEnvironment(macCatalyst)
   import ActivityKit
 
   /// Shared between two targets:
