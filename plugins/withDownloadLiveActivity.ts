@@ -89,7 +89,8 @@ function ensureAppExtension(
  * and withTVOSTopShelf.ts, which gate the other way on the same env var.
  */
 const withDownloadLiveActivity: ConfigPlugin = (config) => {
-  if (process.env.EXPO_TV === "1") {
+  // Live Activities are iPhone-only: no widget extension on TV or Mac Catalyst
+  if (process.env.EXPO_TV === "1" || process.env.EXPO_CATALYST === "1") {
     return config;
   }
 
