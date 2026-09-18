@@ -62,7 +62,7 @@ final class DownloadTaskStore {
   private let defaults: UserDefaults
 
   init() {
-    #if os(iOS)
+    #if os(iOS) && !targetEnvironment(macCatalyst)
       if let appGroupIdentifier = DownloadActivitySharedContainer.appGroupIdentifier,
         let suite = UserDefaults(suiteName: appGroupIdentifier)
       {
