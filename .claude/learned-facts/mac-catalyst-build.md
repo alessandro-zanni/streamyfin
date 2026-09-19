@@ -56,6 +56,10 @@ before the fix was in:
 - **`expo prebuild` without `--clean` still regenerated all of `ios/`**, wiping `Pods`,
   `ios/build` and the hand-edited MPVKit line in the Podfile. After any prebuild run
   `EXPO_CATALYST=1 pod install` and expect a full from-source build.
+- **A background download is not in the container's `tmp`.** `nsurlsessiond` writes it to
+  `Data/Library/Caches/com.apple.nsurlsessiond/Downloads/<bundle id>/CFNetworkDownload_*.tmp`,
+  so that is where to look to tell a live transfer from a stalled one — an empty `tmp` proves
+  nothing.
 - **`UIApplication.isIdleTimerDisabled` does nothing on the Mac.** It raises no error
   and takes no power assertion (check with `pmset -g assertions`). The native player
   (`NativePlayerViewController.setKeepAwake`) also holds a ProcessInfo activity there.
