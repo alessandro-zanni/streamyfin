@@ -6,6 +6,7 @@ import { Platform, StyleSheet, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "@/components/common/Text";
 import { useGlobalModal } from "@/providers/GlobalModalProvider";
+import { isMacCatalyst } from "@/utils/platform";
 
 // @expo/ui's SwiftUI native module (ExpoUI) does not exist in tvOS builds.
 // A static top-level import evaluates requireNativeModule('ExpoUI') at module
@@ -14,7 +15,7 @@ import { useGlobalModal } from "@/providers/GlobalModalProvider";
 const { Button, Host, Menu } = Platform.isTV
   ? ({} as typeof import("@expo/ui/swift-ui"))
   : require("@expo/ui/swift-ui");
-const { disabled } = Platform.isTV
+const { buttonStyle, disabled } = Platform.isTV
   ? ({} as typeof import("@expo/ui/swift-ui/modifiers"))
   : require("@expo/ui/swift-ui/modifiers");
 
@@ -254,7 +255,12 @@ const PlatformDropdownComponent = ({
           {trigger}
         </View>
         <Host style={[StyleSheet.absoluteFill, expoUIConfig?.hostStyle as any]}>
-          <Menu label={trigger}>
+          <Menu
+            label={trigger}
+            // The Mac idiom draws Menu as an AppKit pop-up button, which paints
+            // an empty bezel over the trigger instead of the trigger itself.
+            modifiers={isMacCatalyst ? [buttonStyle("plain")] : undefined}
+          >
             {groups.flatMap((group, groupIndex) => {
               // Check if this group has radio options
               const radioOptions = group.options.filter(
