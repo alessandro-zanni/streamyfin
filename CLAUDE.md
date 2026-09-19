@@ -58,6 +58,7 @@ UI and headers:
 State and data:
 - `use-network-aware-query-client-limitations` | Object.create breaks private fields; only for invalidateQueries
 - `mark-as-played-flow` | PlayedStatus -> useMarkAsPlayed -> playbackManager with optimistic updates
+- `cloudflare-cuts-transcoded-downloads` | A Cloudflare tunnel cuts transcoded downloads at ~26s; HTTP/3 makes the cut fatal, HTTP/2 lets nsurlsessiond resume
 
 Native modules:
 - `expo-view-props-fail-silently` | `try? prop.set()` drops failed prop conversions with NO error; use a JSON string prop
@@ -77,6 +78,7 @@ TV platform:
 Build and tooling:
 - `eas-archive-drops-gitignored-tracked-files` | EAS uploads skip anything matching .gitignore even if tracked; re-include required assets, keep asset require() at module scope
 - `bun-test-discovery-leaks-fds` | bare `bun test` leaves ~14k fds open; child processes spawned from tests get dead stdio, so do the work in-process
+- `bun-test-mock-module-is-global` | mock.module replaces the module for the whole run; keep pure helpers in dependency-free modules instead
 - `mac-catalyst-build` | EXPO_CATALYST=1 builds the Mac app; pod install needs the flag too, and every Catalyst-only workaround is listed there
 
 ## Project overview
