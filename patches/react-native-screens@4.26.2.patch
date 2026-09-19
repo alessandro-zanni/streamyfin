@@ -1,0 +1,22 @@
+diff --git a/ios/RNSScreenStack.mm b/ios/RNSScreenStack.mm
+index 192f5d2c77192f323844b0d11ee179081891e7a4..f8d85407c139233dcaa389a81108c031724b51e3 100644
+--- a/ios/RNSScreenStack.mm
++++ b/ios/RNSScreenStack.mm
+@@ -40,6 +40,17 @@ @interface RNSScreenStackView () <UINavigationControllerDelegate,
+ 
+ @implementation RNSNavigationController
+ 
++#if TARGET_OS_MACCATALYST
++- (void)viewDidLoad
++{
++  [super viewDidLoad];
++  // The Mac idiom hosts the bar in the window's NSToolbar, which drops custom-view
++  // bar button items: every headerLeft/headerRight vanishes. The iPad style keeps the
++  // bar in the window.
++  self.navigationBar.preferredBehavioralStyle = UIBehavioralStylePad;
++}
++#endif
++
+ #if !TARGET_OS_TV
+ - (UIViewController *)childViewControllerForStatusBarStyle
+ {

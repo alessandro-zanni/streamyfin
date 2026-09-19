@@ -37,6 +37,12 @@ before the fix was in:
   mount, so use `components/common/RefreshControl` instead of React Native's.
   ActivityKit and `BGContinuedProcessingTask` are unavailable there too (hence the
   `!targetEnvironment(macCatalyst)` guards in `modules/background-downloader`).
+- **The Mac idiom moves the navigation bar into the window's NSToolbar** and drops
+  every custom-view bar button item on the way, so all `headerLeft`/`headerRight`
+  buttons vanish (downloads, settings, the item page's download button) while the
+  title survives. `patches/react-native-screens@*.patch` sets
+  `navigationBar.preferredBehavioralStyle = .pad` in `RNSNavigationController`, which
+  keeps the bar in the window like on iPad.
 - **`UIApplication.isIdleTimerDisabled` does nothing on the Mac.** It raises no error
   and takes no power assertion (check with `pmset -g assertions`). The native player
   (`NativePlayerViewController.setKeepAwake`) also holds a ProcessInfo activity there.
