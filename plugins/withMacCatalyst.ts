@@ -37,6 +37,13 @@ const withMacCatalyst: ConfigPlugin = (config) => {
   config = withEntitlementsPlist(config, (config) => {
     delete config.modResults["com.apple.developer.networking.wifi-info"];
     delete config.modResults["aps-environment"];
+    // Unsandboxed, the app's Documents directory is the user's ~/Documents,
+    // so downloads and the MMKV store landed among their files. The sandbox
+    // moves everything into the app's container. Server is for the companion
+    // pairing listener in utils/pairingService.ts.
+    config.modResults["com.apple.security.app-sandbox"] = true;
+    config.modResults["com.apple.security.network.client"] = true;
+    config.modResults["com.apple.security.network.server"] = true;
     return config;
   });
 
@@ -118,6 +125,10 @@ end
         SUPPORTS_MACCATALYST: "YES",
         SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: "NO",
         TARGETED_DEVICE_FAMILY: '"1,2,6"',
+        // maccatalyst.<bundle id>: the iPhone build from the App Store also
+        // runs on Apple silicon Macs, and with the same identifier the two
+        // would share one sandbox container, preferences and data.
+        DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER: "YES",
       });
     }
     return config;
