@@ -1,0 +1,22 @@
+diff --git a/ios/RNSScreenStack.mm b/ios/RNSScreenStack.mm
+index 5da11964f5932cb44e1131c44a2480803c0a62b5..5658d77dacae423d1d07ba41ba3d95452c4242c4 100644
+--- a/ios/RNSScreenStack.mm
++++ b/ios/RNSScreenStack.mm
+@@ -63,6 +63,17 @@ namespace react = facebook::react;
+   return self;
+ }
+ 
++#if TARGET_OS_MACCATALYST
++- (void)viewDidLoad
++{
++  [super viewDidLoad];
++  // The Mac idiom hosts the bar in the window's NSToolbar, which drops custom-view
++  // bar button items: every headerLeft/headerRight vanishes. The iPad style keeps the
++  // bar in the window.
++  self.navigationBar.preferredBehavioralStyle = UIBehavioralStylePad;
++}
++#endif
++
+ #if !TARGET_OS_TV
+ - (UIViewController *)childViewControllerForStatusBarStyle
+ {
