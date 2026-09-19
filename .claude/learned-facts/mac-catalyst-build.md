@@ -43,6 +43,9 @@ before the fix was in:
   title survives. `patches/react-native-screens@*.patch` sets
   `navigationBar.preferredBehavioralStyle = .pad` in `RNSNavigationController`, which
   keeps the bar in the window like on iPad.
+- **The Mac idiom draws a SwiftUI `Menu` as an AppKit pop-up button**, an empty bezel
+  over the React Native label passed to `@expo/ui`'s `Menu`. `PlatformDropdown` adds
+  `buttonStyle("plain")` on Catalyst; any other `Menu` with a custom label needs it too.
 - **Unsandboxed, Documents is the user's `~/Documents`.** Downloads, trickplay folders
   and `mmkv/` landed loose among their files. The plugin turns on the App Sandbox
   (network client and server: the companion pairing listens on a port), so data lives
@@ -50,6 +53,9 @@ before the fix was in:
   bundle id gets the `maccatalyst.` prefix (`DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER`)
   because the App Store iPhone build also runs on Apple silicon Macs, and with the same
   id both would share one container.
+- **`expo prebuild` without `--clean` still regenerated all of `ios/`**, wiping `Pods`,
+  `ios/build` and the hand-edited MPVKit line in the Podfile. After any prebuild run
+  `EXPO_CATALYST=1 pod install` and expect a full from-source build.
 - **`UIApplication.isIdleTimerDisabled` does nothing on the Mac.** It raises no error
   and takes no power assertion (check with `pmset -g assertions`). The native player
   (`NativePlayerViewController.setKeepAwake`) also holds a ProcessInfo activity there.
