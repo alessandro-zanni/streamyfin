@@ -43,6 +43,13 @@ before the fix was in:
   title survives. `patches/react-native-screens@*.patch` sets
   `navigationBar.preferredBehavioralStyle = .pad` in `RNSNavigationController`, which
   keeps the bar in the window like on iPad.
+- **Unsandboxed, Documents is the user's `~/Documents`.** Downloads, trickplay folders
+  and `mmkv/` landed loose among their files. The plugin turns on the App Sandbox
+  (network client and server: the companion pairing listens on a port), so data lives
+  in `~/Library/Containers/maccatalyst.com.fredrikburmester.streamyfin/Data/`. The
+  bundle id gets the `maccatalyst.` prefix (`DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER`)
+  because the App Store iPhone build also runs on Apple silicon Macs, and with the same
+  id both would share one container.
 - **`UIApplication.isIdleTimerDisabled` does nothing on the Mac.** It raises no error
   and takes no power assertion (check with `pmset -g assertions`). The native player
   (`NativePlayerViewController.setKeepAwake`) also holds a ProcessInfo activity there.
@@ -56,7 +63,7 @@ before the fix was in:
   with a real team does not need it.
 - **The Expo dev menu opens on any long click in Debug.** Its three-finger long-press
   recognizer can't count fingers with a mouse. Turn it off with
-  `defaults write com.fredrikburmester.streamyfin EXDevMenuTouchGestureEnabled -bool false`
+  `defaults write maccatalyst.com.fredrikburmester.streamyfin EXDevMenuTouchGestureEnabled -bool false`
   (⌘D still opens the menu).
 - **MPVKit needs a `maccatalyst` slice** in the release zip. `make gpl platform=maccatalyst`
   in streamyfin/MPVKit builds it once `cFlags` carries the iOSSupport framework path
