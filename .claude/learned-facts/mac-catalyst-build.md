@@ -82,6 +82,6 @@ before the fix was in:
   traps at launch in `_UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption`. The
   plugin adds the manifest and a `SceneDelegate` (appended to `AppDelegate.swift`) that mounts
   React Native in the scene's window; on Catalyst `AppDelegate` no longer creates one. Deep
-  links arrive in `scene(_:openURLContexts:)`. Open question: the first window comes up tiny
-  (~170×190 pt); `sizeRestrictions.minimumSize` and `requestGeometryUpdate(.Mac)` set from
-  `willConnectTo` did not change it.
+  links arrive in `scene(_:openURLContexts:)`. The window opens at a normal size and resizes
+  freely. Measuring it with `CGWindowListCopyWindowInfo` while the app is in the background
+  under Stage Manager reports the side thumbnail (~170×190 pt), not the window.
