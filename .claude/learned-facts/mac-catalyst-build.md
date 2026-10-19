@@ -78,3 +78,8 @@ before the fix was in:
 - **MPVKit needs a `maccatalyst` slice** in the release zip. `make gpl platform=maccatalyst`
   in streamyfin/MPVKit builds it once `cFlags` carries the iOSSupport framework path
   (`vo_avfoundation.m` imports UIKit) and `create-combined-framework.sh` knows the slice.
+- **macOS 27 requires the scene lifecycle.** Without `UIApplicationSceneManifest` the app
+  traps at launch in `_UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption`. Expo
+  SDK 58's template adopts it on every platform (`SceneDelegate.swift`), so the plugin adds
+  nothing. Measuring the window with `CGWindowListCopyWindowInfo` while the app is in the
+  background under Stage Manager reports the side thumbnail (~170×190 pt), not the window.
