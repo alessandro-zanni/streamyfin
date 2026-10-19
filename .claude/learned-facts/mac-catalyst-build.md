@@ -78,3 +78,10 @@ before the fix was in:
 - **MPVKit needs a `maccatalyst` slice** in the release zip. `make gpl platform=maccatalyst`
   in streamyfin/MPVKit builds it once `cFlags` carries the iOSSupport framework path
   (`vo_avfoundation.m` imports UIKit) and `create-combined-framework.sh` knows the slice.
+- **macOS 27 requires the scene lifecycle.** Without `UIApplicationSceneManifest` the app
+  traps at launch in `_UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption`. The
+  plugin adds the manifest and a `SceneDelegate` (appended to `AppDelegate.swift`) that mounts
+  React Native in the scene's window; on Catalyst `AppDelegate` no longer creates one. Deep
+  links arrive in `scene(_:openURLContexts:)`. Open question: the first window comes up tiny
+  (~170×190 pt); `sizeRestrictions.minimumSize` and `requestGeometryUpdate(.Mac)` set from
+  `willConnectTo` did not change it.

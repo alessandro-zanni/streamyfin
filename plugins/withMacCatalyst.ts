@@ -3,8 +3,10 @@ import path from "node:path";
 import {
   type ConfigPlugin,
   IOSConfig,
+  withAppDelegate,
   withDangerousMod,
   withEntitlementsPlist,
+  withInfoPlist,
   withPodfile,
   withPodfileProperties,
   withXcodeProject,
@@ -110,6 +112,76 @@ end
 `;
     }
     config.modResults.contents = podfile;
+    return config;
+  });
+
+  // macOS 27 traps at launch in _UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption
+  // when a Catalyst app has no scene manifest. Adopt the scene lifecycle on the
+  // Mac only: SceneDelegate (appended below) mounts React Native in the scene's
+  // window, so AppDelegate stops creating one there.
+  config = withInfoPlist(config, (config) => {
+    config.modResults.UIApplicationSceneManifest = {
+      UIApplicationSupportsMultipleScenes: false,
+      UISceneConfigurations: {
+        UIWindowSceneSessionRoleApplication: [
+          {
+            UISceneConfigurationName: "Default Configuration",
+            UISceneDelegateClassName: "$(PRODUCT_MODULE_NAME).SceneDelegate",
+          },
+        ],
+      },
+    };
+    return config;
+  });
+
+  config = withAppDelegate(config, (config) => {
+    const sceneMarker = "class SceneDelegate";
+    let contents = config.modResults.contents;
+    if (!contents.includes(sceneMarker)) {
+      const windowSetup = "#if os(iOS) || os(tvOS)\n    window = UIWindow(";
+      if (!contents.includes(windowSetup)) {
+        throw new Error(
+          "withMacCatalyst: AppDelegate window setup not found, update the scene patch",
+        );
+      }
+      contents = contents.replace(
+        windowSetup,
+        "#if (os(iOS) || os(tvOS)) && !targetEnvironment(macCatalyst)\n    window = UIWindow(",
+      );
+      contents += `
+#if targetEnvironment(macCatalyst)
+// Scene lifecycle, required on macOS 27 (see plugins/withMacCatalyst.ts).
+class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+  var window: UIWindow?
+
+  func scene(
+    _ scene: UIScene,
+    willConnectTo session: UISceneSession,
+    options connectionOptions: UIScene.ConnectionOptions
+  ) {
+    guard let windowScene = scene as? UIWindowScene,
+          let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
+    let window = UIWindow(windowScene: windowScene)
+    self.window = window
+    appDelegate.window = window
+    appDelegate.reactNativeFactory?.startReactNative(
+      withModuleName: "main",
+      in: window,
+      launchOptions: nil)
+    self.scene(scene, openURLContexts: connectionOptions.urlContexts)
+  }
+
+  // With scenes, deep links arrive here instead of application(_:open:options:).
+  func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+    for context in URLContexts {
+      RCTLinkingManager.application(UIApplication.shared, open: context.url, options: [:])
+    }
+  }
+}
+#endif
+`;
+    }
+    config.modResults.contents = contents;
     return config;
   });
 
