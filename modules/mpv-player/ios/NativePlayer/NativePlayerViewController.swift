@@ -40,6 +40,8 @@ final class NativePlayerViewController: UIViewController {
 	private var displaySleepActivity: NSObjectProtocol?
 	/// The player put the window in full screen, so it takes it out on close.
 	private var enteredWindowFullScreen = false
+	/// The app's tab bar, hidden while the player is up (see setAppTabsHidden).
+	private weak var hiddenTabBarController: UITabBarController?
 	#endif
 	#if os(tvOS)
 	/// Whether the current pan gesture is driving the scrub (a pan that
@@ -429,7 +431,14 @@ final class NativePlayerViewController: UIViewController {
 				UIKeyCommand(input: UIKeyCommand.inputRightArrow, modifierFlags: [], action: #selector(handleRightArrowCommand)),
 			]
 		}
-		if PlayerKeyboardPolicy.registersVolumeCommands(in: state) {
+		#if targetEnvironment(macCatalyst)
+		// The Mac keeps one volume, the system's: the player has no slider and
+		// leaves the arrows alone.
+		let volumeKeys = false
+		#else
+		let volumeKeys = true
+		#endif
+		if volumeKeys, PlayerKeyboardPolicy.registersVolumeCommands(in: state) {
 			commands += [
 				UIKeyCommand(input: UIKeyCommand.inputUpArrow, modifierFlags: [], action: #selector(handleUpArrowCommand)),
 				UIKeyCommand(input: UIKeyCommand.inputDownArrow, modifierFlags: [], action: #selector(handleDownArrowCommand)),
@@ -574,6 +583,41 @@ final class NativePlayerViewController: UIViewController {
 	}
 	#endif
 
+	#if targetEnvironment(macCatalyst)
+	override func viewWillAppear(_ animated: Bool) {
+		super.viewWillAppear(animated)
+		setAppTabsHidden(true)
+	}
+
+	/// The Mac idiom draws the app's tab bar in the window's title bar, which a
+	/// full-screen presentation does not cover, so the tabs would sit on top of
+	/// the video. The player hides them while it is up.
+	private func setAppTabsHidden(_ hidden: Bool) {
+		// Before macOS 15 (iOS 18 APIs) the tabs are not in the title bar.
+		guard #available(iOS 18.0, *) else { return }
+		if hidden {
+			guard let root = presentingViewController?.view.window?.rootViewController,
+				let tabs = Self.firstTabBarController(in: root), !tabs.isTabBarHidden
+			else { return }
+			tabs.setTabBarHidden(true, animated: false)
+			hiddenTabBarController = tabs
+		} else {
+			hiddenTabBarController?.setTabBarHidden(false, animated: false)
+			hiddenTabBarController = nil
+		}
+	}
+
+	private static func firstTabBarController(in root: UIViewController) -> UITabBarController? {
+		var queue = [root]
+		while !queue.isEmpty {
+			let controller = queue.removeFirst()
+			if let tabs = controller as? UITabBarController { return tabs }
+			queue += controller.children
+		}
+		return nil
+	}
+	#endif
+
 	override func viewWillDisappear(_ animated: Bool) {
 		super.viewWillDisappear(animated)
 		isViewVisible = false
@@ -585,6 +629,7 @@ final class NativePlayerViewController: UIViewController {
 			MacWindowFullScreen.toggle()
 		}
 		enteredWindowFullScreen = false
+		setAppTabsHidden(false)
 		#endif
 		#if os(iOS)
 		// Hand the bar back visible — the app-level state persists past this
