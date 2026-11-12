@@ -44,6 +44,7 @@ import {
 import { LogProvider } from "@/utils/log";
 import { storage } from "@/utils/mmkv";
 import { responseRoute } from "@/utils/notificationRoute";
+import { isMacCatalyst } from "@/utils/platform";
 import {
   queryDehydrateOptions,
   withoutPersistedMutations,
@@ -53,9 +54,11 @@ import { shouldRetryQuery } from "@/utils/queryRetry";
 import { reportDataError } from "@/utils/reportDataError";
 
 const Notifications = !Platform.isTV ? require("expo-notifications") : null;
-const JellyfinCastStopReporter = Platform.isTV
-  ? null
-  : require("@/components/JellyfinCastStopReporter").JellyfinCastStopReporter;
+// No Chromecast on TV or on the Mac (no Cast SDK slice for Catalyst).
+const JellyfinCastStopReporter =
+  Platform.isTV || isMacCatalyst
+    ? null
+    : require("@/components/JellyfinCastStopReporter").JellyfinCastStopReporter;
 
 import { getSessionApi } from "@jellyfin/sdk/lib/utils/api/session-api";
 import { getLocales } from "expo-localization";
