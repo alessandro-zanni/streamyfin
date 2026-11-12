@@ -86,37 +86,19 @@ const withMacCatalyst: ConfigPlugin = (config) => {
         end
       end
     end
-    # React Native's prebuilt frameworks (React, ReactNativeDependencies) are
-    # versioned, macOS-style bundles in their Catalyst slice, but ship loose
-    # copies at the root (binary, Resources, resource bundles) and a real
-    # Versions/Current directory. codesign rejects the embed ("unsealed contents
-    # present in the root directory", "bundle format is ambiguous"). Rebuild the
-    # layout: Current links to A, loose resources move into A/Resources, and the
-    # root holds only links into Versions/Current.
-    Dir.glob(File.join(installer.sandbox.root, '{React-Core-prebuilt,ReactNativeDependencies}', '**', '*.xcframework', '*maccatalyst*', '*.framework')).each do |fw|
-      version = File.join(fw, 'Versions', 'A')
-      next unless File.directory?(version)
-      current = File.join(fw, 'Versions', 'Current')
-      unless File.symlink?(current)
-        FileUtils.rm_rf(current)
-        File.symlink('A', current)
-      end
-      resources = File.join(version, 'Resources')
-      Dir.children(fw).each do |name|
-        path = File.join(fw, name)
-        next if File.symlink?(path) || %w[Headers Modules Versions].include?(name)
-        if File.exist?(File.join(version, name))
-          FileUtils.rm_rf(path)
-        else
-          FileUtils.rm_rf(File.join(resources, name))
-          FileUtils.mv(path, resources)
+    # React Native's prebuilt frameworks have a Catalyst slice codesign
+    # rejects; the script explains. Fix it now, and again each build after
+    # React Native's own phases swap in the Debug or Release frameworks.
+    layout_fix = File.expand_path('../scripts/ios/fix-catalyst-framework-layout.sh', __dir__)
+    system('bash', layout_fix, installer.sandbox.root.to_s) or raise "#{layout_fix} failed"
+    installer.pods_project.targets
+      .select { |t| %w[React-Core-prebuilt ReactNativeDependencies].include?(t.name) }
+      .each do |t|
+        t.shell_script_build_phases.each do |phase|
+          next if phase.shell_script.include?(layout_fix)
+          phase.shell_script += %(\nif [ "$IS_MACCATALYST" = "YES" ]; then bash "#{layout_fix}" "$PODS_ROOT"; fi\n)
         end
       end
-      Dir.children(version).each do |name|
-        link = File.join(fw, name)
-        File.symlink(File.join('Versions', 'Current', name), link) unless File.exist?(link) || File.symlink?(link)
-      end
-    end
 `,
       );
       // Runs in post_integrate, not post_install: the app's aggregate xcconfig
