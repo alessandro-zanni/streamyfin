@@ -47,14 +47,12 @@ const withMacCatalyst: ConfigPlugin = (config) => {
     return config;
   });
 
-  // Build Expo modules and React Native from source. Expo's precompiled
-  // xcframeworks have no Catalyst slice, and React Native's prebuilt
-  // ReactNativeDependencies.framework keeps its resource bundles at the root of
-  // a versioned Mac framework, which codesign rejects as "bundle format is
-  // ambiguous" when embedding it.
+  // Build Expo modules from source: their precompiled xcframeworks have no
+  // Catalyst slice. React Native stays prebuilt (its slices have one, see the
+  // layout fix in post_install): built from source, NitroModules cannot build
+  // the cxxreact module on Catalyst.
   config = withPodfileProperties(config, (config) => {
     config.modResults.EXPO_USE_PRECOMPILED_MODULES = "false";
-    config.modResults["ios.buildReactNativeFromSource"] = "true";
     return config;
   });
 
@@ -86,6 +84,37 @@ const withMacCatalyst: ConfigPlugin = (config) => {
         if current.nil? || Gem::Version.new(current) < Gem::Version.new(app_target)
           c.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = app_target
         end
+      end
+    end
+    # React Native's prebuilt frameworks (React, ReactNativeDependencies) are
+    # versioned, macOS-style bundles in their Catalyst slice, but ship loose
+    # copies at the root (binary, Resources, resource bundles) and a real
+    # Versions/Current directory. codesign rejects the embed ("unsealed contents
+    # present in the root directory", "bundle format is ambiguous"). Rebuild the
+    # layout: Current links to A, loose resources move into A/Resources, and the
+    # root holds only links into Versions/Current.
+    Dir.glob(File.join(installer.sandbox.root, '{React-Core-prebuilt,ReactNativeDependencies}', '**', '*.xcframework', '*maccatalyst*', '*.framework')).each do |fw|
+      version = File.join(fw, 'Versions', 'A')
+      next unless File.directory?(version)
+      current = File.join(fw, 'Versions', 'Current')
+      unless File.symlink?(current)
+        FileUtils.rm_rf(current)
+        File.symlink('A', current)
+      end
+      resources = File.join(version, 'Resources')
+      Dir.children(fw).each do |name|
+        path = File.join(fw, name)
+        next if File.symlink?(path) || %w[Headers Modules Versions].include?(name)
+        if File.exist?(File.join(version, name))
+          FileUtils.rm_rf(path)
+        else
+          FileUtils.rm_rf(File.join(resources, name))
+          FileUtils.mv(path, resources)
+        end
+      end
+      Dir.children(version).each do |name|
+        link = File.join(fw, name)
+        File.symlink(File.join('Versions', 'Current', name), link) unless File.exist?(link) || File.symlink?(link)
       end
     end
 `,
