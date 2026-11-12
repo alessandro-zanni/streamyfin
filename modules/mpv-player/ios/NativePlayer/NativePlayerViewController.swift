@@ -38,6 +38,8 @@ final class NativePlayerViewController: UIViewController {
 	/// Holds the display awake on the Mac, where isIdleTimerDisabled does
 	/// nothing (see setKeepAwake).
 	private var displaySleepActivity: NSObjectProtocol?
+	/// The player put the window in full screen, so it takes it out on close.
+	private var enteredWindowFullScreen = false
 	#endif
 	#if os(tvOS)
 	/// Whether the current pan gesture is driving the scrub (a pan that
@@ -239,8 +241,27 @@ final class NativePlayerViewController: UIViewController {
 		view.addGestureRecognizer(pinch)
 		#endif
 
-		#if os(tvOS)
-		setupRemotePressRecognizers()
+		#if targetEnvironment(macCatalyst)
+		// The mouse stands in for the tap: moving it shows the controls, and
+		// the cursor hides with them.
+		view.addGestureRecognizer(
+			UIHoverGestureRecognizer(target: self, action: #selector(handleHover(_:))))
+		let pointer = UIPointerInteraction(delegate: self)
+		view.addInteraction(pointer)
+		viewModel.$controlsVisible
+			.removeDuplicates()
+			.receive(on: DispatchQueue.main)
+			.sink { _ in pointer.invalidate() }
+			.store(in: &cancellables)
+		viewModel.onToggleWindowFullScreen = { [weak self] in
+			guard let self else { return }
+			let entering = !MacWindowFullScreen.isFullScreen()
+			MacWindowFullScreen.toggle()
+			self.enteredWindowFullScreen = entering
+		}
+		#endif
+
+		#if os(tvOS) || targetEnvironment(macCatalyst)
 		// Zoom toggles re-run layout — the layer frame carries the fill.
 		viewModel.$isZoomedToFill
 			.removeDuplicates()
@@ -250,6 +271,10 @@ final class NativePlayerViewController: UIViewController {
 				self?.view.layoutIfNeeded()
 			}
 			.store(in: &cancellables)
+		#endif
+
+		#if os(tvOS)
+		setupRemotePressRecognizers()
 		// HDR: the old TV player requests matching display criteria from the
 		// window's AVDisplayManager — without this, HDR plays as SDR.
 		viewModel.onHDRModeDetected = { [weak self] mode, fps in
@@ -322,17 +347,24 @@ final class NativePlayerViewController: UIViewController {
 		engine.syncSubtitleLayerFrame()
 		CATransaction.commit()
 		viewModel.applySubtitleScale()
+		#if targetEnvironment(macCatalyst)
+		// Entering or leaving full screen resizes the window, so this also sees
+		// the green button and the View menu toggle it.
+		let fullScreen = MacWindowFullScreen.isFullScreen()
+		if viewModel.isWindowFullScreen != fullScreen { viewModel.isWindowFullScreen = fullScreen }
+		if !fullScreen { enteredWindowFullScreen = false }
+		#endif
 	}
 
-	/// tvOS zoom-to-fill: AVSampleBufferDisplayLayer.videoGravity has a
-	/// history of silently not applying (and mpv's VO owns the layer), so
+	/// tvOS and Mac zoom-to-fill: AVSampleBufferDisplayLayer.videoGravity has
+	/// a history of silently not applying (and mpv's VO owns the layer), so
 	/// fill is implemented by sizing the layer to the aspect-fill rect —
 	/// the clipping container crops the overflow. The layer's aspect then
 	/// matches the video's, making gravity irrelevant. iOS keeps the
 	/// gravity-based fill (proven, and PiP depends on the layer geometry).
 	private func zoomAwareLayerFrame() -> CGRect {
 		let bounds = videoContainerView.bounds
-		#if os(tvOS)
+		#if os(tvOS) || targetEnvironment(macCatalyst)
 		guard viewModel.isZoomedToFill, bounds.width > 0, bounds.height > 0 else {
 			return bounds
 		}
@@ -389,11 +421,20 @@ final class NativePlayerViewController: UIViewController {
 		// seeking. The space bar is a press: a held one toggles once. A command
 		// with priority swallows the arrow before the focus system sees it, so the
 		// commands are only there while nothing else on screen wants the arrows.
-		guard PlayerKeyboardPolicy.registersArrowCommands(in: keyboardState) else { return [] }
-		let commands = [
-			UIKeyCommand(input: UIKeyCommand.inputLeftArrow, modifierFlags: [], action: #selector(handleLeftArrowCommand)),
-			UIKeyCommand(input: UIKeyCommand.inputRightArrow, modifierFlags: [], action: #selector(handleRightArrowCommand)),
-		]
+		let state = keyboardState
+		var commands: [UIKeyCommand] = []
+		if PlayerKeyboardPolicy.registersArrowCommands(in: state) {
+			commands += [
+				UIKeyCommand(input: UIKeyCommand.inputLeftArrow, modifierFlags: [], action: #selector(handleLeftArrowCommand)),
+				UIKeyCommand(input: UIKeyCommand.inputRightArrow, modifierFlags: [], action: #selector(handleRightArrowCommand)),
+			]
+		}
+		if PlayerKeyboardPolicy.registersVolumeCommands(in: state) {
+			commands += [
+				UIKeyCommand(input: UIKeyCommand.inputUpArrow, modifierFlags: [], action: #selector(handleUpArrowCommand)),
+				UIKeyCommand(input: UIKeyCommand.inputDownArrow, modifierFlags: [], action: #selector(handleDownArrowCommand)),
+			]
+		}
 		for command in commands {
 			command.wantsPriorityOverSystemBehavior = true
 			// The physical key, as the press path reads it: a mirrored command
@@ -452,7 +493,8 @@ final class NativePlayerViewController: UIViewController {
 			subtitleScaleShown: viewModel.showSubtitleScaleControl,
 			isScrubbing: viewModel.isScrubbing,
 			canSeek: viewModel.isReadyToSeek && viewModel.duration > 0,
-			syncPlayActive: viewModel.isSyncPlayActive
+			syncPlayActive: viewModel.isSyncPlayActive,
+			windowFullScreen: viewModel.isWindowFullScreen
 		)
 	}
 
@@ -463,6 +505,12 @@ final class NativePlayerViewController: UIViewController {
 		case .keyboardSpacebar: playerKey = .space
 		case .keyboardLeftArrow: playerKey = .leftArrow
 		case .keyboardRightArrow: playerKey = .rightArrow
+		case .keyboardM: playerKey = .m
+		case .keyboardEscape: playerKey = .escape
+		#if targetEnvironment(macCatalyst)
+		// Only the Mac has a window to put in full screen.
+		case .keyboardF: playerKey = .f
+		#endif
 		default: return nil
 		}
 		// Not .numericPad: most keyboards report it on the arrows.
@@ -482,6 +530,21 @@ final class NativePlayerViewController: UIViewController {
 		}
 	}
 
+	@objc private func handleUpArrowCommand() {
+		if let action = PlayerKeyboardPolicy.commandAction(for: .upArrow, in: keyboardState) {
+			perform(action)
+		}
+	}
+
+	@objc private func handleDownArrowCommand() {
+		if let action = PlayerKeyboardPolicy.commandAction(for: .downArrow, in: keyboardState) {
+			perform(action)
+		}
+	}
+
+	/// Volume moved by one up or down arrow.
+	private static let keyboardVolumeStep = 0.05
+
 	private func perform(_ action: PlayerKeyAction) {
 		// As a touch does: a key shows hidden controls, and only keeps shown
 		// ones up, so each repeat of a held arrow does not show them again.
@@ -494,7 +557,20 @@ final class NativePlayerViewController: UIViewController {
 		case .togglePlayPause: viewModel.togglePlayPause()
 		case .seekBackward: viewModel.seekBackward()
 		case .seekForward: viewModel.seekForward()
+		case .volumeUp, .volumeDown:
+			let step = action == .volumeUp ? Self.keyboardVolumeStep : -Self.keyboardVolumeStep
+			viewModel.volumeController.setVolume(viewModel.volumeController.volume + step)
+		case .toggleMute: viewModel.toggleMute()
+		case .toggleFullScreen, .exitFullScreen: viewModel.toggleWindowFullScreen()
+		case .close: viewModel.close()
 		}
+	}
+	#endif
+
+	#if targetEnvironment(macCatalyst)
+	@objc private func handleHover(_ recognizer: UIHoverGestureRecognizer) {
+		guard recognizer.state == .began || recognizer.state == .changed else { return }
+		viewModel.pointerMoved()
 	}
 	#endif
 
@@ -503,6 +579,13 @@ final class NativePlayerViewController: UIViewController {
 		isViewVisible = false
 		engine.setPictureInPictureHostVisible(false)
 		setKeepAwake(false)
+		#if targetEnvironment(macCatalyst)
+		// Hand the window back as the player found it.
+		if enteredWindowFullScreen, MacWindowFullScreen.isFullScreen() {
+			MacWindowFullScreen.toggle()
+		}
+		enteredWindowFullScreen = false
+		#endif
 		#if os(iOS)
 		// Hand the bar back visible — the app-level state persists past this
 		// VC, and the RN screens underneath expect the bar shown.
@@ -879,3 +962,11 @@ extension NativePlayerViewController: UIGestureRecognizerDelegate {
 }
 #endif
 
+#if targetEnvironment(macCatalyst)
+extension NativePlayerViewController: UIPointerInteractionDelegate {
+	/// The cursor hides with the controls, as in any Mac video player.
+	func pointerInteraction(_ interaction: UIPointerInteraction, styleFor region: UIPointerRegion) -> UIPointerStyle? {
+		viewModel.controlsVisible ? nil : .hidden()
+	}
+}
+#endif

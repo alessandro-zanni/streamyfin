@@ -234,6 +234,7 @@ export type NativePlayerStrings = Partial<
     | "goBack"
     | "endsAt"
     | "zoomToFill"
+    | "fullScreen"
     | "stop"
     | "stopPlayback"
     | "stopPlayingTitle"

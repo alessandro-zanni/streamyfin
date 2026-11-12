@@ -73,6 +73,14 @@ before the fix was in:
 - **Keyboard input during playback is the native player's job.** The `useKeyEventListener`
   in `components/video-player/controls/Controls.tsx` is not mounted while
   `NativePlayerViewController` is up, so the keys live in its `keyCommands`.
+- **The native player's controls are reshaped for the mouse on the Mac** (all behind
+  `targetEnvironment(macCatalyst)` in `modules/mpv-player/ios/NativePlayer`): the arrows
+  button, a double click and F toggle the window's full screen through
+  `MacWindowFullScreen` (KVC on `NSApplication`'s key window and `toggleFullScreen:`: UIKit
+  has no API for it), zoom to fill moves to the More menu and sizes the layer like on tvOS
+  (`zoomAwareLayerFrame`), a click plays or pauses, the mouse moving shows the controls
+  (`UIHoverGestureRecognizer`) and the cursor hides with them (`UIPointerStyle.hidden()`),
+  and the swipes, the 2x hold and the brightness slider are off.
 - **Ad-hoc signed Release builds crash at launch** with "Library missing ... different
   Team IDs": Release enables the hardened runtime, whose library validation rejects
   ad-hoc frameworks. `ios:catalyst` passes `ENABLE_HARDENED_RUNTIME=NO`. A build signed

@@ -5,12 +5,23 @@ enum PlayerKey: Equatable {
 	case space
 	case leftArrow
 	case rightArrow
+	case upArrow
+	case downArrow
+	case f
+	case m
+	case escape
 }
 
 enum PlayerKeyAction: Equatable {
 	case togglePlayPause
 	case seekBackward
 	case seekForward
+	case volumeUp
+	case volumeDown
+	case toggleMute
+	case toggleFullScreen
+	case exitFullScreen
+	case close
 }
 
 /// What is on screen when a key arrives, as far as the keyboard cares.
@@ -29,6 +40,9 @@ struct PlayerKeyboardState: Equatable {
 	var canSeek = true
 	/// In SyncPlay a seek is a request to the group.
 	var syncPlayActive = false
+	/// The Mac window is in full screen, where Escape leaves it before it
+	/// closes the player.
+	var windowFullScreen = false
 }
 
 /// Kept free of UIKit so `scripts/ios/test-player-keyboard-policy.sh` can run
@@ -45,8 +59,22 @@ enum PlayerKeyboardPolicy {
 	/// the arrow went down with, so each one is checked against the state of
 	/// that moment.
 	static func commandAction(for key: PlayerKey, in state: PlayerKeyboardState) -> PlayerKeyAction? {
-		guard registersArrowCommands(in: state) else { return nil }
-		return seekAction(for: key)
+		switch key {
+		case .leftArrow, .rightArrow:
+			guard registersArrowCommands(in: state) else { return nil }
+			return seekAction(for: key)
+		case .upArrow, .downArrow:
+			guard registersVolumeCommands(in: state) else { return nil }
+			return key == .upArrow ? .volumeUp : .volumeDown
+		case .space, .f, .m, .escape:
+			return nil
+		}
+	}
+
+	/// Whether up and down are key commands. Volume is local even in SyncPlay,
+	/// so they repeat there too.
+	static func registersVolumeCommands(in state: PlayerKeyboardState) -> Bool {
+		!state.overlayOwnsInput && !state.subtitleScaleShown && !state.isScrubbing
 	}
 
 	/// What a key press does, or nil to send it up the responder chain. A
@@ -61,6 +89,15 @@ enum PlayerKeyboardPolicy {
 			// Outside SyncPlay the key command takes the arrows.
 			guard state.syncPlayActive, arrowsSeek(in: state) else { return nil }
 			return seekAction(for: key)
+		case .upArrow, .downArrow:
+			// Always key commands.
+			return nil
+		case .f:
+			return .toggleFullScreen
+		case .m:
+			return .toggleMute
+		case .escape:
+			return state.windowFullScreen ? .exitFullScreen : .close
 		}
 	}
 
@@ -72,7 +109,7 @@ enum PlayerKeyboardPolicy {
 		switch key {
 		case .leftArrow: return .seekBackward
 		case .rightArrow: return .seekForward
-		case .space: return nil
+		default: return nil
 		}
 	}
 }
