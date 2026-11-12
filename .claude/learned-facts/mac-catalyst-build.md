@@ -22,17 +22,23 @@ before the fix was in:
   `iOSMac_macOS`). A pod at React Native's 15.1 minimum gets macOS 10.15 and Xcode rejects
   it. Setting `MACOSX_DEPLOYMENT_TARGET` does nothing, because Catalyst derives it from
   `IPHONEOS_DEPLOYMENT_TARGET`. The plugin raises pods to the app's target.
-- **Precompiled Expo modules and prebuilt React Native don't work.** The Expo
-  xcframeworks have no Catalyst slice. React Native's `ReactNativeDependencies.framework`
-  has one, but its resource bundles sit at the root of a versioned framework and codesign
-  fails on embed with "bundle format is ambiguous". Both build from source on Catalyst,
-  so the first build is slow.
+- **Expo modules build from source, React Native stays prebuilt.** The Expo
+  xcframeworks have no Catalyst slice. React Native's prebuilt `React` and
+  `ReactNativeDependencies` frameworks have one, but it is a versioned Mac bundle with loose
+  copies at its root and a real `Versions/Current` directory, so codesign fails on embed
+  ("unsealed contents present in the root directory", "bundle format is ambiguous"). The
+  plugin rebuilds that layout in `post_install`. React Native built from source is not an
+  option since 0.88: NitroModules cannot build the `cxxreact` clang module on Catalyst
+  (`OS_SIGNPOST_*`, `is_dynamic` errors), with or without Swift explicit modules.
 - **Sentry picks the AppKit slice.** `[sdk=maccatalyst*]` never matches: Catalyst uses
   the `macosx` SDK. The fix rewrites the xcconfigs in `post_integrate`, because the app's
   aggregate xcconfig is written after `post_install`.
   getsentry/sentry-react-native#6755.
-- **react-native-track-player** needs `import CoreAudio` on Catalyst (patch in `patches/`,
-  lovegaoshi/react-native-track-player#91).
+- **react-native-track-player** needs `import CoreAudio` on Catalyst: in the library
+  since lovegaoshi/react-native-track-player#91, no patch needed.
+- **Reanimated imports AppKit whenever it exists** (`REAReducedMotion.h`), and on
+  Catalyst it does: AppKit brings QuickDraw, whose `Rect` and `Point` clash with React
+  Native's. `patches/react-native-reanimated@*.patch` imports it only without UIKit.
 - **UIKit throws on iPhone-only controls in the Mac idiom.** `UIRefreshControl` crashes at
   mount, so use `components/common/RefreshControl` instead of React Native's.
   ActivityKit and `BGContinuedProcessingTask` are unavailable there too (hence the
@@ -55,7 +61,7 @@ before the fix was in:
   id both would share one container.
 - **`expo prebuild` without `--clean` still regenerated all of `ios/`**, wiping `Pods`,
   `ios/build` and the hand-edited MPVKit line in the Podfile. After any prebuild run
-  `EXPO_CATALYST=1 pod install` and expect a full from-source build.
+  `EXPO_CATALYST=1 pod install` and expect the Expo modules to build from source again.
 - **A background download is not in the container's `tmp`.** `nsurlsessiond` writes it to
   `Data/Library/Caches/com.apple.nsurlsessiond/Downloads/<bundle id>/CFNetworkDownload_*.tmp`,
   so that is where to look to tell a live transfer from a stalled one — an empty `tmp` proves

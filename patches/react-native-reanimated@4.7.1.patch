@@ -1,0 +1,15 @@
+diff --git a/apple/reanimated/apple/REAReducedMotion.h b/apple/reanimated/apple/REAReducedMotion.h
+index 5e22e18c7abe91f6ca6b1a58a5ff14a0f4e97647..1c20ca84c5a04e1bc34a56eb601baca1dd50660e 100644
+--- a/apple/reanimated/apple/REAReducedMotion.h
++++ b/apple/reanimated/apple/REAReducedMotion.h
+@@ -4,7 +4,9 @@
+ #import <UIKit/UIAccessibility.h>
+ #endif
+ 
+-#if __has_include(<AppKit/AppKit.h>)
++// Mac Catalyst has both; AppKit there pulls in QuickDraw, whose Rect and Point
++// clash with React Native's. It is only needed without UIKit.
++#if !__has_include(<UIKit/UIAccessibility.h>) && __has_include(<AppKit/AppKit.h>)
+ #import <AppKit/AppKit.h>
+ #endif
+ 
