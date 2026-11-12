@@ -81,6 +81,13 @@ before the fix was in:
   (`zoomAwareLayerFrame`), a click plays or pauses, the mouse moving shows the controls
   (`UIHoverGestureRecognizer`) and the cursor hides with them (`UIPointerStyle.hidden()`),
   and the swipes, the 2x hold and the brightness slider are off.
+- **The in-player volume is not the Mac's.** `SystemVolumeController` (MPVolumeView's
+  slider, `AVAudioSession.outputVolume`) sets and reads a volume of the app's own on
+  Catalyst; the menu bar never shows it and the slider never sees the system's. The Mac
+  player has no volume slider and leaves up and down alone: the system volume is the only one.
+- **The Mac idiom draws a `UITabBarController`'s tabs in the window's title bar**, which a
+  full-screen presentation does not cover. `NativePlayerViewController` hides them with
+  `setTabBarHidden` while the player is up.
 - **Ad-hoc signed Release builds crash at launch** with "Library missing ... different
   Team IDs": Release enables the hardened runtime, whose library validation rejects
   ad-hoc frameworks. `ios:catalyst` passes `ENABLE_HARDENED_RUNTIME=NO`. A build signed

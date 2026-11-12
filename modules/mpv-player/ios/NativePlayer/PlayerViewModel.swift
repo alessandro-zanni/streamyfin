@@ -526,7 +526,13 @@ final class PlayerViewModel: NSObject, ObservableObject {
 		seekForwardSec = config.ui.seekForwardSec.isFinite ? max(1, config.ui.seekForwardSec) : 10
 		seekBackwardSec = config.ui.seekBackwardSec.isFinite ? max(1, config.ui.seekBackwardSec) : 10
 		hapticsEnabled = config.ui.hapticsEnabled
+		#if targetEnvironment(macCatalyst)
+		// The Mac keeps one volume, the system's. The slider set a volume of the
+		// app's own, which the menu bar never showed.
+		showVolumeSlider = false
+		#else
 		showVolumeSlider = config.ui.showVolumeSlider
+		#endif
 		#if targetEnvironment(macCatalyst)
 		// The Mac has no screen brightness for the app to set.
 		showBrightnessSlider = false
