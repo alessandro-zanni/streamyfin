@@ -35,6 +35,8 @@ final class PlayerViewModel: NSObject, ObservableObject {
 	/// tvOS: set by the view controller — it owns the window's
 	/// AVDisplayManager (HDR display criteria).
 	var onHDRModeDetected: ((HDRMode, Double) -> Void)?
+	/// Mac: set by the view controller, which owns the window.
+	var onToggleWindowFullScreen: (() -> Void)?
 
 	// MARK: - Playback state
 
@@ -67,6 +69,8 @@ final class PlayerViewModel: NSObject, ObservableObject {
 	@Published var isPipActive = false
 	@Published var errorMessage: String?
 	@Published var isZoomedToFill = false
+	/// Mac: the window is in full screen, kept by the view controller.
+	@Published var isWindowFullScreen = false
 	@Published var subtitleScale: Double = 1.0
 	@Published var subtitleScaleLocked = false
 	@Published var subtitlesAtTop = false
@@ -523,7 +527,12 @@ final class PlayerViewModel: NSObject, ObservableObject {
 		seekBackwardSec = config.ui.seekBackwardSec.isFinite ? max(1, config.ui.seekBackwardSec) : 10
 		hapticsEnabled = config.ui.hapticsEnabled
 		showVolumeSlider = config.ui.showVolumeSlider
+		#if targetEnvironment(macCatalyst)
+		// The Mac has no screen brightness for the app to set.
+		showBrightnessSlider = false
+		#else
 		showBrightnessSlider = config.ui.showBrightnessSlider
+		#endif
 		holdToSpeedEnabled = config.ui.holdToSpeedEnabled
 		holdToSpeedRate = config.ui.holdToSpeedRate
 		pinchToZoomEnabled = config.ui.pinchToZoomEnabled
@@ -652,6 +661,22 @@ final class PlayerViewModel: NSObject, ObservableObject {
 	private var canAutoHide: Bool {
 		isPlaying && !isScrubbing && !isBuffering && !showEpisodeList
 			&& !showSyncPlayQueue && !showSubtitleScaleControl && !showTechnicalInfo && errorMessage == nil
+	}
+
+	func toggleWindowFullScreen() {
+		onToggleWindowFullScreen?()
+		scheduleAutoHide()
+	}
+
+	/// Mac: the mouse moved over the player. It shows hidden controls and
+	/// keeps shown ones up, as a touch does.
+	func pointerMoved() {
+		guard !controlsLocked else { return }
+		if controlsVisible {
+			touchInteractionOccurred()
+		} else {
+			showControls()
+		}
 	}
 
 	func menuInteractionStarted() {

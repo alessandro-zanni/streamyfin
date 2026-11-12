@@ -118,6 +118,7 @@ export const buildNativePlayerStrings = (
   quality: t("player.menu.quality"),
   subtitleSize: t("player.menu.subtitle_scale"),
   zoomToFill: t("player.zoom_to_fill"),
+  fullScreen: t("player.full_screen"),
   subtitleSync: t("player.subtitle_sync"),
   audioSync: t("player.audio_sync"),
   volumeBoost: t("player.volume_boost"),

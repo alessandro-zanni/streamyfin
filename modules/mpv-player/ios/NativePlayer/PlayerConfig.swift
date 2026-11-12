@@ -173,7 +173,7 @@ struct UIOptionsRecord: Record {
 	/// nextEpisode, playNow, cancel, episodes, speed, audio, subtitles,
 	/// chapters, technicalInfo, playbackError, close, off, quality,
 	/// subtitleSize, subtitleSync, audioSync, volumeBoost, rotate,
-	/// lockControls, unlock, zoomToFill, stillWatching, continueWatching,
+	/// lockControls, unlock, zoomToFill, fullScreen, stillWatching, continueWatching,
 	/// goBack, endsAt, stop, stopPlayback, stopPlayingTitle,
 	/// stopPlayingConfirm — endsAt carries a %TIME% placeholder,
 	/// stopPlayingTitle a %TITLE% placeholder). Native falls

@@ -89,6 +89,28 @@ enum PlayerKeyboardPolicyTests {
             "no SyncPlay seek request under a scrub"
         )
 
+        // Volume: key commands that repeat, SyncPlay included
+        expect(command(.upArrow, idle) == .volumeUp, "up raises the volume")
+        expect(command(.downArrow, idle) == .volumeDown, "down lowers the volume")
+        expect(command(.upArrow, syncPlay) == .volumeUp, "volume is local, so it repeats in SyncPlay too")
+        expect(command(.upArrow, with { $0.canSeek = false }) == .volumeUp, "volume works while the stream loads")
+        expect(command(.upArrow, with { $0.overlayOwnsInput = true }) == nil, "an overlay keeps up and down")
+        expect(command(.downArrow, with { $0.subtitleScaleShown = true }) == nil, "the size slider keeps up and down")
+        expect(command(.downArrow, with { $0.isScrubbing = true }) == nil, "no volume change under a scrub")
+        expect(press(.upArrow, idle) == nil, "an up press is left to the key command")
+        expect(command(.f, idle) == nil && command(.m, idle) == nil && command(.escape, idle) == nil,
+               "letters and Escape are presses: held, they act once")
+
+        // Letters and Escape
+        expect(press(.f, idle) == .toggleFullScreen, "F toggles full screen")
+        expect(press(.f, modified: true, idle) == nil, "Command-F and friends stay with the system")
+        expect(press(.m, idle) == .toggleMute, "M toggles mute")
+        expect(press(.m, with { $0.overlayOwnsInput = true }) == nil, "M goes to the overlay that owns the input")
+        expect(press(.escape, idle) == .close, "Escape closes the player in a window")
+        expect(press(.escape, with { $0.windowFullScreen = true }) == .exitFullScreen, "Escape leaves full screen first")
+        expect(press(.escape, with { $0.overlayOwnsInput = true }) == nil, "Escape goes to the overlay that owns the input")
+        expect(press(.escape, with { $0.isScrubbing = true }) == nil, "Escape does not close under a scrub")
+
         print("PlayerKeyboardPolicy tests passed")
     }
 }

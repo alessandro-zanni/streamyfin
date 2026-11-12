@@ -43,9 +43,15 @@ struct PlayerControlsRootView: View {
 			// Tap-to-toggle catcher behind everything interactive; also the
 			// gesture surface — controls layered above receive their own
 			// touches first, so drags here only start on empty video area.
+			#if targetEnvironment(macCatalyst)
+			// No swipes or press-and-hold with a mouse: a click drag would scrub
+			// or change the volume by accident.
+			tapSurface(size: size)
+			#else
 			tapSurface(size: size)
 				.gesture(surfaceDragGesture(size: size))
 				.gesture(holdSpeedGesture)
+			#endif
 
 			if viewModel.controlsVisible {
 				scrims
@@ -261,6 +267,19 @@ struct PlayerControlsRootView: View {
 	@ViewBuilder
 	private func tapSurface(size: CGSize) -> some View {
 		let surface = Color.clear.contentShape(Rectangle())
+		#if targetEnvironment(macCatalyst)
+		// A Mac player: a click plays or pauses, a double click is full screen.
+		// The double click is composed first, so a click waits out its window.
+		if viewModel.controlsLocked {
+			surface.onTapGesture { handleSurfaceTap() }
+		} else {
+			surface.gesture(
+				TapGesture(count: 2)
+					.onEnded { viewModel.toggleWindowFullScreen() }
+					.exclusively(before: TapGesture().onEnded { handleSurfaceClick() })
+			)
+		}
+		#else
 		if viewModel.doubleTapToSeekEnabled && !viewModel.controlsLocked
 			&& !viewModel.showSubtitleScaleControl {
 			surface.gesture(
@@ -275,7 +294,20 @@ struct PlayerControlsRootView: View {
 		} else {
 			surface.onTapGesture { handleSurfaceTap() }
 		}
+		#endif
 	}
+
+	#if targetEnvironment(macCatalyst)
+	private func handleSurfaceClick() {
+		// A click outside the subtitle size panel closes it, nothing more.
+		if viewModel.showSubtitleScaleControl {
+			closeSubtitleScaleControl()
+			return
+		}
+		viewModel.togglePlayPause()
+		viewModel.showControls()
+	}
+	#endif
 
 	private func handleSurfaceTap() {
 		viewModel.toggleControls()

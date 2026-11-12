@@ -14,6 +14,13 @@ struct PlayerTopBar: View {
 
 	private var buttonSize: CGFloat { compact ? 40 : 44 }
 
+	/// The Mac gives the bar's zoom button to the window's full screen.
+	#if targetEnvironment(macCatalyst)
+	private let zoomInMoreMenu = true
+	#else
+	private let zoomInMoreMenu = false
+	#endif
+
 	var body: some View {
 		HStack(spacing: 4) {
 			barButton(systemName: "xmark") {
@@ -55,6 +62,18 @@ struct PlayerTopBar: View {
 				}
 			}
 
+			#if targetEnvironment(macCatalyst)
+			// On the Mac these arrows mean the window's full screen, as in every
+			// Mac player; zoom to fill moves to the More menu.
+			barButton(
+				systemName: viewModel.isWindowFullScreen
+					? "arrow.down.right.and.arrow.up.left"
+					: "arrow.up.left.and.arrow.down.right"
+			) {
+				viewModel.toggleWindowFullScreen()
+			}
+			.accessibilityLabel(viewModel.str("fullScreen", "Full screen"))
+			#else
 			if !compact {
 				barButton(
 					systemName: viewModel.isZoomedToFill
@@ -64,6 +83,7 @@ struct PlayerTopBar: View {
 					viewModel.toggleZoomToFill()
 				}
 			}
+			#endif
 
 			if !viewModel.isSyncPlayActive && !viewModel.episodeList.isEmpty {
 				barButton(systemName: "list.bullet") {
@@ -254,7 +274,7 @@ struct PlayerTopBar: View {
 
 	private var moreMenu: some View {
 		Menu {
-			if compact {
+			if compact || zoomInMoreMenu {
 				Button {
 					viewModel.toggleZoomToFill()
 				} label: {
@@ -264,6 +284,8 @@ struct PlayerTopBar: View {
 						Label(viewModel.str("zoomToFill", "Zoom to fill"), systemImage: "arrow.up.left.and.arrow.down.right")
 					}
 				}
+			}
+			if compact {
 				if !viewModel.isSyncPlayActive {
 					Menu {
 						speedMenuEntries
