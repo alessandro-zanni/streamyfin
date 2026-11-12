@@ -26,8 +26,10 @@ before the fix was in:
   xcframeworks have no Catalyst slice. React Native's prebuilt `React` and
   `ReactNativeDependencies` frameworks have one, but it is a versioned Mac bundle with loose
   copies at its root and a real `Versions/Current` directory, so codesign fails on embed
-  ("unsealed contents present in the root directory", "bundle format is ambiguous"). The
-  plugin rebuilds that layout in `post_install`. React Native built from source is not an
+  ("unsealed contents present in the root directory", "bundle format is ambiguous").
+  `scripts/ios/fix-catalyst-framework-layout.sh` rebuilds that layout. The plugin runs it after
+  `pod install` and again at the end of React Native's own build phases, which swap in the
+  Debug or Release frameworks before every build: fixed only at install, Release breaks again. React Native built from source is not an
   option since 0.88: NitroModules cannot build the `cxxreact` clang module on Catalyst
   (`OS_SIGNPOST_*`, `is_dynamic` errors), with or without Swift explicit modules.
 - **Sentry picks the AppKit slice.** `[sdk=maccatalyst*]` never matches: Catalyst uses
