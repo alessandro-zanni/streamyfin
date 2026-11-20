@@ -114,3 +114,8 @@ before the fix was in:
   buffers. To try mpv options without a rebuild, drop an `mpv.conf` in
   `~/Library/Containers/maccatalyst.com.fredrikburmester.streamyfin/Data/Library/Caches/mpv/`
   (the renderer runs with `config=yes`).
+- **`ios:catalyst` builds the Debug app and stops there**: it does not launch it. The Debug
+  app loads its JavaScript from Metro (`bun run start`), and the sandboxed dev launcher never
+  finds the server on its own ("Searching for development servers..."): enter
+  `http://localhost:8081` under "Enter URL manually". It shares the data container of the
+  Release build, so the server login carries over.
