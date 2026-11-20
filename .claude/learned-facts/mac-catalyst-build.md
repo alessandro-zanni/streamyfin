@@ -106,3 +106,11 @@ before the fix was in:
   SDK 58's template adopts it on every platform (`SceneDelegate.swift`), so the plugin adds
   nothing. Measuring the window with `CGWindowListCopyWindowInfo` while the app is in the
   background under Stage Manager reports the side thumbnail (~170×190 pt), not the window.
+- **Zero-copy VideoToolbox frames blotch the shadows on the Mac.** With `hwdec=videotoolbox`
+  the dark scenes of an 8-bit BT.709 SDR H.264 show grey blotches that Chrome does not
+  (same bytes: Jellyfin web copied the video). Not gamma: tagging the frames gamma 2.2
+  changed nothing, and `hwdec=no` alone fixed it. `MPVLayerRenderer` uses
+  `videotoolbox-copy` on Catalyst: still hardware decode, but AVFoundation gets mpv's own
+  buffers. To try mpv options without a rebuild, drop an `mpv.conf` in
+  `~/Library/Containers/maccatalyst.com.fredrikburmester.streamyfin/Data/Library/Caches/mpv/`
+  (the renderer runs with `config=yes`).
