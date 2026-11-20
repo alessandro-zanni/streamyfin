@@ -409,6 +409,11 @@ final class MPVLayerRenderer {
         // On device, use VideoToolbox with software fallback enabled
         #if targetEnvironment(simulator)
         configuredHwdec = "no"
+        #elseif targetEnvironment(macCatalyst)
+        // Zero-copy VideoToolbox frames reach the Mac's display layer with
+        // shadows turned into grey blotches (dark scenes, 8-bit BT.709 SDR);
+        // copy-back hands AVFoundation mpv's own buffers, which render clean.
+        configuredHwdec = "videotoolbox-copy"
         #else
         configuredHwdec = "videotoolbox"
         #endif
